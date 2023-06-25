@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WIREPASS</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: #333;
+    }
+    
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    
+    li {
+      margin-bottom: 10px;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      setInterval(updateData, 2000);
+    });
+    
+    function updateData() {
+      $.ajax({
+        url: '/update_data',
+        type: 'GET',
+        success: function(response) {
+          var userList = response.users;
+          var userListElement = $('#user-list');
+          userListElement.empty();
+          userList.forEach(function(user) {
+            var listItem = $('<li>').text(user);
+            userListElement.append(listItem);
+          });
+        },
+        error: function(error) {
+          console.log(error);
+        }
+      });
+    }
+  </script>
+</head>
+<body>
+  <h1>Utilisateurs</h1>
+  <ul id="user-list">
+    <!-- Les utilisateurs seront ajoutés dynamiquement ici -->
+  </ul>
+</body>
+</html>
