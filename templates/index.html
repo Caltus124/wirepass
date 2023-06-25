@@ -1,56 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WIREPASS</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    
-    h1 {
-      color: #333;
-    }
-    
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    
-    li {
-      margin-bottom: 10px;
-    }
-  </style>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script>
-    $(document).ready(function() {
-      setInterval(updateData, 2000);
-    });
-    
-    function updateData() {
-      $.ajax({
-        url: '/update_data',
-        type: 'GET',
-        success: function(response) {
-          var userList = response.users;
-          var userListElement = $('#user-list');
-          userListElement.empty();
-          userList.forEach(function(user) {
-            var listItem = $('<li>').text(user);
-            userListElement.append(listItem);
-          });
-        },
-        error: function(error) {
-          console.log(error);
+    <title>Wirepass - Tableau des utilisateurs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-      });
-    }
-  </script>
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+        }
+
+        table thead th {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            text-align: left;
+        }
+
+        table tbody td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
 </head>
 <body>
-  <h1>Utilisateurs</h1>
-  <ul id="user-list">
-    <!-- Les utilisateurs seront ajoutés dynamiquement ici -->
-  </ul>
+    <h1>Wirepass - Tableau des utilisateurs</h1>
+
+    <table id="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Source IP</th>
+                <th>Destination IP</th>
+                <th>Nom d'utilisateur</th>
+                <th>Mot de passe</th>
+                <th>Jour</th>
+                <th>Heure</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Les données des utilisateurs seront ajoutées ici via JavaScript -->
+        </tbody>
+    </table>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            setInterval(function() {
+                $.ajax({
+                    url: '/update_data',
+                    method: 'GET',
+                    success: function(response) {
+                        var users = response.users;
+                        var tableBody = $('#users-table tbody');
+                        tableBody.empty(); // Efface les anciennes données du tableau
+                        users.forEach(function(user) {
+                            var row = '<tr>' +
+                                '<td>' + user[0] + '</td>' +
+                                '<td>' + user[1] + '</td>' +
+                                '<td>' + user[2] + '</td>' +
+                                '<td>' + user[3] + '</td>' +
+                                '<td>' + user[4] + '</td>' +
+                                '<td>' + user[5] + '</td>' +
+                                '<td>' + user[6] + '</td>' +
+                                '<td>' + user[7] + '</td>' +
+                                '</tr>';
+                            tableBody.append(row); // Ajoute une nouvelle ligne au tableau
+                        });
+                    }
+                });
+            }, 2000); // Rafraîchit toutes les 2 secondes (2000 ms)
+        });
+    </script>
 </body>
 </html>
