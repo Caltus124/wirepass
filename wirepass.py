@@ -109,6 +109,14 @@ def handle_http_packet(pkt, src_ip, dst_ip):
                 else:
                     password = None
 
+                payload2 = password
+                equal_sign_index = payload2.find("=")
+
+                if equal_sign_index != -1:
+                    password2 = payload2[equal_sign_index + 1:].strip()
+                else:
+                    password2 = None
+
                 current_time = datetime.datetime.now()
                 formatted_heur = str(current_time.strftime('%H:%M:%S'))
                 current_date = datetime.date.today()
@@ -117,9 +125,9 @@ def handle_http_packet(pkt, src_ip, dst_ip):
                     user = {
                         'type': 'HTTP',
                         'source_ip': src_ip,
-                        'destination_ip': destination_ip,
+                        'destination_ip': host,
                         'username': uname,
-                        'password': password,
+                        'password': password2,
                         'day': current_date,
                         'heur': formatted_heur
                     }

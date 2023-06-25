@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request, redirect
 import mysql.connector
 import time
 from dotenv import load_dotenv
@@ -19,6 +19,7 @@ conn = mysql.connector.connect(
 )
 
 @app.route('/')
+@app.route('/home')
 def index():
     return render_template('index.html')
 
@@ -40,6 +41,21 @@ def add_app_info_to_header(response):
 @app.context_processor
 def inject_app_info():
     return dict(app_name=app.config['APP_NAME'], app_version=app.config['APP_VERSION'])
+
+@app.route('/delete_user', methods=['POST'])
+def delete_user():
+    cursor = conn.cursor()
+    user_id = int(request.form['user_id'])
+    cursor.execute("DELETE FROM users WHERE _id = %s", (user_id,))
+    conn.commit()
+    return jsonify({'message': 'Utilisateur supprimé avec succès'})
+
+@app.route('/clear_database', methods=['POST'])
+def clear_database():
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM users")
+    conn.commit()
+    return redirect('/')
 
 
 if __name__ == '__main__':

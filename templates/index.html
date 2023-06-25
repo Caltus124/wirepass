@@ -32,10 +32,43 @@
             padding: 10px;
             border-bottom: 1px solid #ddd;
         }
+
+        .delete-button {
+            background-color: #f44336;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .delete-button:hover{
+          background-color: #ed645a; 
+        }
+        form {
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 25px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
     <h1>Wirepass - Tableau des utilisateurs</h1>
+    <form action="/clear_database" method="post">
+      <button type="submit">Vider la base de données</button>
+    </form>
 
     <table id="users-table">
         <thead>
@@ -57,32 +90,33 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function() {
-            setInterval(function() {
-                $.ajax({
-                    url: '/update_data',
-                    method: 'GET',
-                    success: function(response) {
-                        var users = response.users;
-                        var tableBody = $('#users-table tbody');
-                        tableBody.empty(); // Efface les anciennes données du tableau
-                        users.forEach(function(user) {
-                            var row = '<tr>' +
-                                '<td>' + user[0] + '</td>' +
-                                '<td>' + user[1] + '</td>' +
-                                '<td>' + user[2] + '</td>' +
-                                '<td>' + user[3] + '</td>' +
-                                '<td>' + user[4] + '</td>' +
-                                '<td>' + user[5] + '</td>' +
-                                '<td>' + user[6] + '</td>' +
-                                '<td>' + user[7] + '</td>' +
-                                '</tr>';
-                            tableBody.append(row); // Ajoute une nouvelle ligne au tableau
-                        });
-                    }
-                });
-            }, 2000); // Rafraîchit toutes les 2 secondes (2000 ms)
-        });
-    </script>
+      $(document).ready(function() {
+          setInterval(function() {
+              $.ajax({
+                  url: '/update_data',
+                  method: 'GET',
+                  success: function(response) {
+                      var users = response.users;
+                      var tableBody = $('#users-table tbody');
+                      tableBody.empty(); // Efface les anciennes données du tableau
+                      users.forEach(function(user) {
+                          var row = '<tr>' +
+                              '<td>' + user[0] + '</td>' +
+                              '<td>' + user[1] + '</td>' +
+                              '<td>' + user[2] + '</td>' +
+                              '<td><a href="http://' + user[3] + '" target="_blank">' + user[3] + '</a></td>' +
+                              '<td>' + user[4] + '</td>' +
+                              '<td>' + user[5] + '</td>' +
+                              '<td>' + user[6] + '</td>' +
+                              '<td>' + user[7] + '</td>' +
+                              '</tr>';
+  
+                          tableBody.append(row); // Ajoute une nouvelle ligne au tableau
+                      });
+                  }
+              });
+          }, 500); // Rafraîchit toutes les 2 secondes (2000 ms)
+      });
+  </script>
 </body>
 </html>
