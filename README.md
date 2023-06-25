@@ -16,13 +16,13 @@
 <p>WIREPASS is a powerful application that actively detects and collects user credentials on insecure protocols within your computer network. By identifying vulnerabilities within your network, WIREPASS enables you to strengthen security measures and safeguard sensitive data effectively.</p>
 
 
-## Key Features:
+## Key Features
 
-*Insecure Protocol Detection: WIREPASS actively scans and identifies insecure protocols within your network.
+* Insecure Protocol Detection: WIREPASS actively scans and identifies insecure protocols within your network.
 
-*Credential Collection: The application securely gathers usernames and passwords used on the detected insecure protocols.
+* Credential Collection: The application securely gathers usernames and passwords used on the detected insecure protocols.
 
-*Detailed Reports: WIREPASS generates comprehensive reports containing collected credential information, facilitating thorough vulnerability analysis of your network.
+* Detailed Reports: WIREPASS generates comprehensive reports containing collected credential information, facilitating thorough vulnerability analysis of your network.
 
 ## Installation
 
